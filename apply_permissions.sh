@@ -11,6 +11,8 @@ SCRIPTS=(
     "setup_cockpit.sh"
     "configure_firewall.sh"
     "setup_ngrok.sh"
+    "setup_openvpn.sh"
+    "manage_vpn_clients.sh"
 )
 
 # Function to apply permissions to a script
