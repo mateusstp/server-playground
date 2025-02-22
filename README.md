@@ -70,6 +70,39 @@ After starting:
 - Public URLs will be displayed in the console
 - Stop tunnels with: `pkill ngrok`
 
+### 4. OpenVPN Setup (`setup_openvpn.sh` and `manage_vpn_clients.sh`)
+
+Installs and configures OpenVPN server with client management capabilities.
+
+#### Server Setup
+```bash
+sudo ./setup_openvpn.sh
+```
+
+This script:
+- Installs OpenVPN and dependencies
+- Configures server certificates and keys
+- Sets up networking and firewall rules
+- Enables IP forwarding
+- Starts the OpenVPN service
+
+#### Managing Clients
+```bash
+# Create a new client
+sudo ./manage_vpn_clients.sh create client_name
+
+# List all clients
+sudo ./manage_vpn_clients.sh list
+
+# Revoke a client's access
+sudo ./manage_vpn_clients.sh revoke client_name
+```
+
+After creating a client:
+- Find the client configuration at: `/etc/openvpn/client-configs/client_name/client_name.ovpn`
+- Transfer this file securely to the client device
+- Import the .ovpn file into your OpenVPN client software
+
 ## Security Considerations
 
 1. Always change default passwords and use strong authentication
