@@ -37,13 +37,24 @@ install_openvpn() {
     apt update
     apt install -y openvpn easy-rsa
 
-    # Copy easy-rsa files to OpenVPN directory
+    # Create and set up easy-rsa directory
+    echo "Setting up easy-rsa directory..."
+    rm -rf /etc/openvpn/easy-rsa
     make-cadir /etc/openvpn/easy-rsa
     
-    # Initialize the PKI
-    cd /etc/openvpn/easy-rsa
+    # Create required directories
+    mkdir -p /etc/openvpn/clients
+    mkdir -p /etc/openvpn/client-configs
+    
+    # Set proper permissions
+    chmod 700 /etc/openvpn/clients
+    chmod 700 /etc/openvpn/client-configs
+    
+    # Move to easy-rsa directory and ensure we're there
+    cd /etc/openvpn/easy-rsa || exit 1
     
     # Configure easy-rsa variables
+    echo "Configuring easy-rsa variables..."
     cat > vars << EOF
 set_var EASYRSA_REQ_COUNTRY    "US"
 set_var EASYRSA_REQ_PROVINCE   "California"
@@ -55,7 +66,11 @@ set_var EASYRSA_REQ_CN         "$SERVER_NAME"
 EOF
 
     # Initialize the PKI
+    echo "Initializing PKI..."
     ./easyrsa init-pki
+    
+    # Ensure PKI directory exists and has correct permissions
+    chmod -R 700 pki
     
     # Create CA certificate (non-interactive)
     echo "Creating CA certificate..."
@@ -71,7 +86,9 @@ EOF
     
     # Generate TLS key for additional security
     echo "Generating TLS key..."
-    openvpn --genkey secret /etc/openvpn/ta.key
+    cd /etc/openvpn || exit 1
+    openvpn --genkey secret ta.key
+    chmod 600 ta.key
 }
 
 # Function to configure OpenVPN server

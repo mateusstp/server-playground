@@ -29,6 +29,59 @@ OUTPUT_DIR="/etc/openvpn/client-configs"
 mkdir -p "$CLIENT_DIR"
 mkdir -p "$OUTPUT_DIR"
 
+# Function to check prerequisites
+check_prerequisites() {
+    if [ ! -d "$EASYRSA_DIR" ]; then
+        echo "❌ Error: easy-rsa directory not found at $EASYRSA_DIR"
+        echo "Please run setup_openvpn.sh first"
+        exit 1
+    fi
+
+    if [ ! -f "$EASYRSA_DIR/pki/ca.crt" ]; then
+        echo "❌ Error: CA certificate not found. Running initialization..."
+        cd "$EASYRSA_DIR" || exit 1
+        
+        # Initialize PKI if not already done
+        if [ ! -d "$EASYRSA_DIR/pki" ]; then
+            ./easyrsa init-pki
+        fi
+        
+        # Build CA if not exists
+        ./easyrsa --batch --req-cn="$ORGANIZATION CA" build-ca nopass
+    fi
+}
+
+# Function to check if client exists
+check_client_exists() {
+    local client_name=$1
+    local req_file="$EASYRSA_DIR/pki/reqs/${client_name}.req"
+    local cert_file="$EASYRSA_DIR/pki/issued/${client_name}.crt"
+    local key_file="$EASYRSA_DIR/pki/private/${client_name}.key"
+    
+    if [ -f "$req_file" ] || [ -f "$cert_file" ] || [ -f "$key_file" ]; then
+        return 0 # true, client exists
+    fi
+    return 1 # false, client doesn't exist
+}
+
+# Function to clean up existing client files
+clean_client_files() {
+    local client_name=$1
+    echo "Cleaning up existing files for client: $client_name"
+    
+    cd "$EASYRSA_DIR" || exit 1
+    
+    # Remove existing files
+    rm -f "pki/reqs/${client_name}.req" 2>/dev/null
+    rm -f "pki/issued/${client_name}.crt" 2>/dev/null
+    rm -f "pki/private/${client_name}.key" 2>/dev/null
+    
+    # Remove from index if exists
+    if [ -f "pki/index.txt" ]; then
+        sed -i "/\/CN=${client_name}$/d" "pki/index.txt"
+    fi
+}
+
 # Function to create a new client
 create_client() {
     local client_name=$1
@@ -38,10 +91,25 @@ create_client() {
         exit 1
     fi
     
+    # Check prerequisites first
+    check_prerequisites
+    
+    # Check if client already exists
+    if check_client_exists "$client_name"; then
+        echo "⚠️  Client '$client_name' already exists."
+        read -p "Do you want to recreate it? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Operation cancelled."
+            exit 1
+        fi
+        clean_client_files "$client_name"
+    fi
+    
     echo "Creating certificate for client: $client_name"
     
     # Generate client certificate and key
-    cd "$EASYRSA_DIR"
+    cd "$EASYRSA_DIR" || exit 1
     ./easyrsa --batch build-client-full "$client_name" nopass
     
     # Create client configuration directory if it doesn't exist
