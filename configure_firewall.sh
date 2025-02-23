@@ -39,6 +39,11 @@ ufw allow 22/tcp
 echo "Allowing Cockpit connections..."
 ufw allow 9090/tcp
 
+# Allow OpenVPN connections
+echo "Allowing OpenVPN connections..."
+ufw allow 1194/udp comment 'OpenVPN UDP'
+ufw allow 1194/tcp comment 'OpenVPN TCP'
+
 # Enable UFW
 echo "Enabling UFW..."
 ufw --force enable
