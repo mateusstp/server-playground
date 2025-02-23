@@ -86,14 +86,35 @@ tunnels:
 EOF
 }
 
+# Check if tmux is installed
+check_tmux() {
+    if ! command -v tmux &> /dev/null; then
+        echo "Tmux not found. Installing..."
+        if command -v brew &> /dev/null; then
+            brew install tmux
+        else
+            sudo apt-get update && sudo apt-get install -y tmux
+        fi
+    fi
+}
+
 # Start ngrok
 start_ngrok() {
     echo "Starting ngrok tunnels..."
     echo "HTTPS tunnel will forward to localhost:${NGROK_HTTPS_PORT}"
     echo "TCP tunnel will forward to localhost:${NGROK_TCP_PORT}"
     
-    # Start ngrok in background using the configuration file
-    ngrok start --all --config=ngrok.yml &
+    # Check if tmux is installed
+    check_tmux
+    
+    # Kill existing ngrok tmux session if it exists
+    tmux kill-session -t ngrok 2>/dev/null || true
+    
+    # Create new tmux session
+    tmux new-session -d -s ngrok
+    
+    # Start ngrok in tmux session
+    tmux send-keys -t ngrok "ngrok start --all --config=ngrok.yml" C-m
     
     # Wait for ngrok to start
     sleep 5
