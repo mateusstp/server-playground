@@ -16,6 +16,7 @@ if [ ! -f "$ENV_FILE" ]; then
 NGROK_AUTH_TOKEN=""
 NGROK_HTTPS_PORT="8080"
 NGROK_TCP_PORT="4000"
+NGROK_TCP_443_PORT="443"
 NGROK_REGION="us"  # Options: us, eu, au, ap, sa, jp, in
 EOF
     echo "Created $ENV_FILE with default values. Please edit it with your configuration."
@@ -82,6 +83,9 @@ tunnels:
     proto: http
   tcp-tunnel:
     addr: ${NGROK_TCP_PORT}
+    proto: tcp
+  tcp-443-tunnel:
+    addr: ${NGROK_TCP_443_PORT:-443}
     proto: tcp
 EOF
 }
